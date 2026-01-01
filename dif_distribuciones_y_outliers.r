@@ -87,30 +87,25 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
         # ---------------------------------------------------
         dat <- choose_distr(j, n_act, is_H0 = TRUE)
         
-        # 1. p-values
+        # 1. Calculamos p-values de los tests
         pval_t <- t.test(dat$x1, dat$x2)$p.value
         pval_w <- wilcox.test(dat$x1, dat$x2, exact=FALSE)$p.value
         
-        # 2. Verificamos Normalidad (Shapiro)
-        es_normal <- FALSE
-        try({
-          if(shapiro.test(dat$x1)$p.value > 0.05 && shapiro.test(dat$x2)$p.value > 0.05) es_normal <- TRUE
-        }, silent=TRUE)
+        # 2. Verificamos Normalidad (DIRECTO)
+        p_shapiro1 <- shapiro.test(dat$x1)$p.value
+        p_shapiro2 <- shapiro.test(dat$x2)$p.value
+        es_normal  <- (p_shapiro1 > 0.05 && p_shapiro2 > 0.05)
         
-        # 3. Sumamos éxitos/errores según estrategia
-        # Estrategia 1: Siempre T
-        if(pval_t < 0.05) h0_sig_T <- h0_sig_T + 1
+        # 3. Sumamos éxitos/errores
+        if(pval_t < 0.05) h0_sig_T <- h0_sig_T + 1         # Siempre T
+        if(pval_w < 0.05) h0_sig_W <- h0_sig_W + 1         # Siempre W
         
-        # Estrategia 2: Siempre Wilcoxon
-        if(pval_w < 0.05) h0_sig_W <- h0_sig_W + 1
-        
-        # Estrategia 3: Condicional
         if(es_normal) {
-          if(pval_t < 0.05) h0_sig_Cond <- h0_sig_Cond + 1 # Usó T
+          if(pval_t < 0.05) h0_sig_Cond <- h0_sig_Cond + 1 # Condicional (Usó T)
         } else {
-          if(pval_w < 0.05) h0_sig_Cond <- h0_sig_Cond + 1 # Usó W
+          if(pval_w < 0.05) h0_sig_Cond <- h0_sig_Cond + 1 # Condicional (Usó W)
         }
-        
+
         # ---------------------------------------------------
         # ESCENARIO 2: PODER (H1 cierta / hay efecto)
         # ---------------------------------------------------
@@ -120,20 +115,15 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
         pval_t <- t.test(dat$x1, dat$x2)$p.value
         pval_w <- wilcox.test(dat$x1, dat$x2, exact=FALSE)$p.value
         
-        # 2. Verificamos Normalidad
-        es_normal <- FALSE
-        try({
-          if(shapiro.test(dat$x1)$p.value > 0.05 && shapiro.test(dat$x2)$p.value > 0.05) es_normal <- TRUE
-        }, silent=TRUE)
+        # 2. Verificamos Normalidad (DIRECTO)
+        p_shapiro1 <- shapiro.test(dat$x1)$p.value
+        p_shapiro2 <- shapiro.test(dat$x2)$p.value
+        es_normal  <- (p_shapiro1 > 0.05 && p_shapiro2 > 0.05)
         
-        # 3. Sumamos éxitos (Poder)
-        # Estrategia 1: Siempre T
+        # 3. Sumamos éxitos
         if(pval_t < 0.05) h1_sig_T <- h1_sig_T + 1
-        
-        # Estrategia 2: Siempre Wilcoxon
         if(pval_w < 0.05) h1_sig_W <- h1_sig_W + 1
         
-        # Estrategia 3: Condicional
         if(es_normal) {
           if(pval_t < 0.05) h1_sig_Cond <- h1_sig_Cond + 1
         } else {
