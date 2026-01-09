@@ -1,8 +1,8 @@
 
 # 1. VARIABLES STARTER
 
-n_simulation <- 1000  
-size <- c(10, 50, 100)
+n_simulation <- 10000 
+size <- c(10, 50, 100, 500, 1000)
 distr <- c('Log_Normal','Cauchy', 'Gamma_asimetria_moderada','Normal_Outliers')
 
 # ==============================================================================
@@ -63,6 +63,9 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
   PW_Siempre_W    <- plantilla
   PW_Condicional  <- plantilla
   
+  # Test de rechazo de Shapiro-Wilk
+  tasa_rechazo_SW <- plantilla
+  
   # BUCLE PRINCIPAL
   for (i in 1:length(n_sizes)){ 
     for (j in 1:length(distributions)){ 
@@ -79,6 +82,9 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
       # H1 es cierta (Poder)
       h1_sig_T <- 0; h1_sig_W <- 0
       h1_sig_Cond <- 0
+
+      # Shapiro rechaza la H0
+      SW_rechazo_contador <- 0
       
       for (k in 1:total_sim) {
         
@@ -95,6 +101,10 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
         p_shapiro1 <- shapiro.test(dat$x1)$p.value
         p_shapiro2 <- shapiro.test(dat$x2)$p.value
         es_normal  <- (p_shapiro1 > 0.05 && p_shapiro2 > 0.05)
+
+        # Si se rechazo la normalidad, lo contamos en la variable contador de SW
+        if (!es_normal){
+          SW_rechazo_contador <- SW_rechazo_contador + 1
         
         # 3. Sumamos éxitos/errores
         if(pval_t < 0.05) h0_sig_T <- h0_sig_T + 1         # Siempre T
@@ -107,8 +117,8 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
         }
 
         # ---------------------------------------------------
-        # ESCENARIO 2: PODER (H1 cierta / hay efecto)
-        # ---------------------------------------------------
+        # ESCENARIO 2: PODER
+        
         dat <- choose_distr(j, n_act, is_H0 = FALSE)
         
         # 1. Calculamos p-values
@@ -141,10 +151,14 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
       PW_Siempre_T[i, j]   <- h1_sig_T / total_sim
       PW_Siempre_W[i, j]   <- h1_sig_W / total_sim
       PW_Condicional[i, j] <- h1_sig_Cond / total_sim
+
+        #Tasa de rechazo de SW
+        tasa_rechazo_SW[i,j] <- SW_rechazo_contador / total_sim
     }
   }
   
   return(list(
+    ShapiroWilk_rechazo = tasa_rechazo_SW
     E1_Siempre_T = E1_Siempre_T, 
     E1_Siempre_W = E1_Siempre_W, 
     E1_Condicional = E1_Condicional,
@@ -157,6 +171,9 @@ simulacion_comparativa <- function(total_sim, n_sizes, distributions){
 # ================= EJECUCIÓN =================
 
 resultados <- simulacion_comparativa(n_simulation, size, distr)
+
+  print("==== TASA DE RECHAZO SHAPIRO-WILK ====")
+  print(resultados$ShapiroWilk_rechazo)
 
 print("===== RESULTADOS ERROR TIPO I  =====")
 print("--- 1. Solo T-Test ---")
