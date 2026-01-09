@@ -1,1 +1,0 @@
-# Trabajo-Estad-stica-R
